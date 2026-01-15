@@ -111,6 +111,25 @@ create policy "Users can CRUD their own set logs" on set_logs
   );
 
 -- =====================================================
+-- GOALS (User objectives)
+-- =====================================================
+create table if not exists goals (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users not null default auth.uid(),
+  exercise_id uuid references exercises(id) on delete cascade not null,
+  target_weight numeric not null,
+  achieved boolean default false,
+  achieved_at timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table goals enable row level security;
+
+drop policy if exists "Users can CRUD their own goals" on goals;
+create policy "Users can CRUD their own goals" on goals
+  for all using (auth.uid() = user_id);
+
+-- =====================================================
 -- INDEXES for performance
 -- =====================================================
 create index if not exists idx_categories_user_id on categories(user_id);
@@ -122,3 +141,5 @@ create index if not exists idx_sessions_user_id on sessions(user_id);
 create index if not exists idx_sessions_routine_id on sessions(routine_id);
 create index if not exists idx_set_logs_session_id on set_logs(session_id);
 create index if not exists idx_set_logs_exercise_id on set_logs(exercise_id);
+create index if not exists idx_goals_user_id on goals(user_id);
+create index if not exists idx_goals_exercise_id on goals(exercise_id);

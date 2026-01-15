@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Trophy, TrendingUp, Calendar, Dumbbell, Loader2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Trophy, TrendingUp, Calendar, Dumbbell, Loader2, ChevronRight, Target } from 'lucide-react'
 
 export function StatsPage() {
   const [loading, setLoading] = useState(true)
@@ -11,7 +12,6 @@ export function StatsPage() {
     prs: [],
     routineFrequency: []
   })
-  const [expandedExercise, setExpandedExercise] = useState(null)
 
   useEffect(() => {
     fetchStats()
@@ -139,9 +139,15 @@ export function StatsPage() {
   return (
     <div className="space-y-6 fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Estadísticas</h1>
-        <p className="text-[var(--text-secondary)] mt-1">Tu progreso de entrenamiento</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Estadísticas</h1>
+          <p className="text-[var(--text-secondary)] mt-1">Tu progreso de entrenamiento</p>
+        </div>
+        <Link to="/goals" className="btn-primary flex items-center gap-2">
+          <Target className="w-5 h-5" />
+          <span className="hidden sm:inline">Metas</span>
+        </Link>
       </div>
 
       {/* Summary Cards */}
@@ -204,40 +210,27 @@ export function StatsPage() {
         ) : (
           <div className="space-y-2">
             {stats.prs.map((pr, index) => (
-              <div key={pr.id} className="rounded-lg bg-[var(--bg-tertiary)]/50">
-                <button
-                  onClick={() => setExpandedExercise(expandedExercise === pr.id ? null : pr.id)}
-                  className="w-full p-3 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      index === 0 ? 'bg-[var(--warning)] text-black' :
-                      index === 1 ? 'bg-gray-300 text-black' :
-                      index === 2 ? 'bg-amber-600 text-white' :
-                      'bg-[var(--bg-tertiary)]'
-                    }`}>
-                      {index + 1}
-                    </span>
-                    <span className="font-medium text-[var(--text-primary)]">{pr.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-[var(--primary)]">{pr.maxWeight} kg</span>
-                    {expandedExercise === pr.id ? (
-                      <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
-                    )}
-                  </div>
-                </button>
-                {expandedExercise === pr.id && (
-                  <div className="px-3 pb-3 pt-0">
-                    <div className="text-sm text-[var(--text-muted)] space-y-1">
-                      <p>Mejor serie: {pr.maxWeight} kg</p>
-                      <p>Registros: {pr.history.length}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <Link
+                key={pr.id}
+                to={`/exercise/${pr.id}`}
+                className="rounded-lg bg-[var(--bg-tertiary)]/50 p-3 flex items-center justify-between hover:bg-[var(--bg-tertiary)] transition-colors block"
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    index === 0 ? 'bg-[var(--warning)] text-black' :
+                    index === 1 ? 'bg-gray-300 text-black' :
+                    index === 2 ? 'bg-amber-600 text-white' :
+                    'bg-[var(--bg-tertiary)]'
+                  }`}>
+                    {index + 1}
+                  </span>
+                  <span className="font-medium text-[var(--text-primary)]">{pr.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-[var(--primary)]">{pr.maxWeight} kg</span>
+                  <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+                </div>
+              </Link>
             ))}
           </div>
         )}

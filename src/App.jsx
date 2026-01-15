@@ -9,6 +9,9 @@ import { TimerPage } from './pages/TimerPage'
 import { HistoryPage } from './pages/HistoryPage'
 import { StatsPage } from './pages/StatsPage'
 import { ComparePage } from './pages/ComparePage'
+import { ExerciseProgressPage } from './pages/ExerciseProgressPage'
+import { GoalsPage } from './pages/GoalsPage'
+import { CalculatorPage } from './pages/CalculatorPage'
 import { ActiveSessionPage } from './pages/ActiveSessionPage'
 import { Loader2 } from 'lucide-react'
 import './index.css'
@@ -131,6 +134,42 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <ComparePage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Exercise Progress Page */}
+      <Route
+        path="/exercise/:exerciseId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ExerciseProgressPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Goals Page */}
+      <Route
+        path="/goals"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <GoalsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Calculator Page */}
+      <Route
+        path="/calculator"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <CalculatorPage />
             </Layout>
           </ProtectedRoute>
         }
