@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Timer, Check, Plus, Trash2, Loader2, Trophy } from 'lucide-react'
+import { ArrowLeft, Timer, Check, Plus, Trash2, Loader2, Trophy, List, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { formatWeight, calculateVolume } from '../lib/utils'
+import { calculateVolume } from '../lib/utils'
 import { RestTimer } from '../components/workout/RestTimer'
 
 export function ActiveSessionPage() {
@@ -12,13 +12,15 @@ export function ActiveSessionPage() {
   const [routine, setRoutine] = useState(null)
   const [exercises, setExercises] = useState([])
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
-  const [sets, setSets] = useState({}) // { exerciseId: [{ reps, weight_kg, set_number }] }
-  const [previousSets, setPreviousSets] = useState({}) // Smart Sets data
+  const [sets, setSets] = useState({})
+  const [previousSets, setPreviousSets] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showTimer, setShowTimer] = useState(false)
   const [sessionComplete, setSessionComplete] = useState(false)
   const [totalVolume, setTotalVolume] = useState(0)
+  const [showExerciseList, setShowExerciseList] = useState(false)
+  const [completedExercises, setCompletedExercises] = useState(new Set())
 
   useEffect(() => {
     fetchRoutineData()
@@ -26,7 +28,6 @@ export function ActiveSessionPage() {
 
   const fetchRoutineData = async () => {
     try {
-      // Fetch routine with exercises
       const { data: routineData, error: routineError } = await supabase
         .from('routines')
         .select(`
@@ -49,14 +50,12 @@ export function ActiveSessionPage() {
         .filter(Boolean) || []
       setExercises(orderedExercises)
 
-      // Initialize sets for each exercise
       const initialSets = {}
       orderedExercises.forEach(ex => {
         initialSets[ex.id] = [{ reps: 0, weight_kg: 0, set_number: 1 }]
       })
       setSets(initialSets)
 
-      // Fetch Smart Sets data (last session for this routine)
       await fetchSmartSets(routineId, orderedExercises)
 
     } catch (error) {
@@ -68,7 +67,6 @@ export function ActiveSessionPage() {
 
   const fetchSmartSets = async (routineId, exercisesList) => {
     try {
-      // Get the last session for this routine
       const { data: lastSession } = await supabase
         .from('sessions')
         .select('id')
@@ -79,7 +77,6 @@ export function ActiveSessionPage() {
 
       if (!lastSession) return
 
-      // Get set logs from last session
       const { data: setLogs } = await supabase
         .from('set_logs')
         .select('*')
@@ -88,7 +85,6 @@ export function ActiveSessionPage() {
 
       if (!setLogs?.length) return
 
-      // Organize by exercise
       const prevSets = {}
       setLogs.forEach(log => {
         if (!prevSets[log.exercise_id]) {
@@ -103,7 +99,6 @@ export function ActiveSessionPage() {
 
       setPreviousSets(prevSets)
 
-      // Pre-fill current sets with previous data (Smart Sets)
       const smartSets = {}
       exercisesList.forEach(ex => {
         if (prevSets[ex.id]?.length) {
@@ -155,22 +150,40 @@ export function ActiveSessionPage() {
     }))
   }
 
+  // Navigate to specific exercise
+  const goToExercise = (index) => {
+    // Mark current as completed if has data
+    if (currentExercise) {
+      const hasSets = currentSets.some(s => s.reps > 0 || s.weight_kg > 0)
+      if (hasSets) {
+        setCompletedExercises(prev => new Set([...prev, currentExercise.id]))
+      }
+    }
+    setCurrentExerciseIndex(index)
+    setShowExerciseList(false)
+  }
+
   const goToNextExercise = () => {
     if (currentExerciseIndex < exercises.length - 1) {
-      setCurrentExerciseIndex(prev => prev + 1)
+      goToExercise(currentExerciseIndex + 1)
     }
   }
 
   const goToPreviousExercise = () => {
     if (currentExerciseIndex > 0) {
-      setCurrentExerciseIndex(prev => prev - 1)
+      goToExercise(currentExerciseIndex - 1)
     }
+  }
+
+  // Check if exercise has logged data
+  const exerciseHasData = (exerciseId) => {
+    const exerciseSets = sets[exerciseId] || []
+    return exerciseSets.some(s => s.reps > 0 || s.weight_kg > 0)
   }
 
   const finishWorkout = async () => {
     setSaving(true)
     try {
-      // Create session
       const { data: session, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -182,7 +195,6 @@ export function ActiveSessionPage() {
 
       if (sessionError) throw sessionError
 
-      // Create set logs
       const setLogs = []
       Object.entries(sets).forEach(([exerciseId, exerciseSets]) => {
         exerciseSets.forEach(set => {
@@ -206,7 +218,6 @@ export function ActiveSessionPage() {
         if (logsError) throw logsError
       }
 
-      // Calculate total volume
       const allSets = Object.values(sets).flat()
       const volume = calculateVolume(allSets)
       setTotalVolume(volume)
@@ -271,14 +282,21 @@ export function ActiveSessionPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          <div className="text-center">
-            <h1 className="font-semibold text-[var(--text-primary)]">
-              {routine?.name}
-            </h1>
-            <p className="text-sm text-[var(--text-muted)]">
-              {currentExerciseIndex + 1} / {exercises.length}
-            </p>
-          </div>
+          {/* Clickable exercise selector */}
+          <button
+            onClick={() => setShowExerciseList(!showExerciseList)}
+            className="flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
+          >
+            <div className="text-center">
+              <h1 className="font-semibold text-[var(--text-primary)]">
+                {routine?.name}
+              </h1>
+              <p className="text-sm text-[var(--text-muted)]">
+                {currentExerciseIndex + 1} / {exercises.length}
+              </p>
+            </div>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showExerciseList ? 'rotate-180' : ''}`} />
+          </button>
 
           <button
             onClick={() => setShowTimer(true)}
@@ -287,21 +305,68 @@ export function ActiveSessionPage() {
             <Timer className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Exercise List Dropdown */}
+        {showExerciseList && (
+          <div className="absolute left-0 right-0 top-full bg-[var(--bg-secondary)] border-b border-[var(--border)] max-h-64 overflow-y-auto">
+            <div className="max-w-4xl mx-auto p-2 space-y-1">
+              {exercises.map((ex, index) => {
+                const hasData = exerciseHasData(ex.id)
+                const isCompleted = completedExercises.has(ex.id)
+                const isCurrent = index === currentExerciseIndex
+                
+                return (
+                  <button
+                    key={ex.id}
+                    onClick={() => goToExercise(index)}
+                    className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors ${
+                      isCurrent 
+                        ? 'bg-[var(--primary)] text-white' 
+                        : 'hover:bg-[var(--bg-tertiary)]'
+                    }`}
+                  >
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      isCompleted || hasData
+                        ? 'bg-[var(--success)] text-white'
+                        : isCurrent
+                          ? 'bg-white/20'
+                          : 'bg-[var(--bg-tertiary)]'
+                    }`}>
+                      {isCompleted || hasData ? <Check className="w-3 h-3" /> : index + 1}
+                    </span>
+                    <div className="text-left flex-1">
+                      <span className="font-medium">{ex.name}</span>
+                      <span className={`text-sm ml-2 ${isCurrent ? 'opacity-70' : 'text-[var(--text-muted)]'}`}>
+                        {ex.categories?.name}
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* Exercise Progress */}
+      {/* Exercise Progress Bar */}
       <div className="max-w-4xl mx-auto px-4 mt-2">
         <div className="flex gap-1">
-          {exercises.map((_, index) => (
-            <div
-              key={index}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                index <= currentExerciseIndex
-                  ? 'bg-[var(--primary)]'
-                  : 'bg-[var(--bg-tertiary)]'
-              }`}
-            />
-          ))}
+          {exercises.map((ex, index) => {
+            const hasData = exerciseHasData(ex.id) || completedExercises.has(ex.id)
+            return (
+              <button
+                key={index}
+                onClick={() => goToExercise(index)}
+                className={`h-2 flex-1 rounded-full transition-colors ${
+                  hasData
+                    ? 'bg-[var(--success)]'
+                    : index === currentExerciseIndex
+                      ? 'bg-[var(--primary)]'
+                      : 'bg-[var(--bg-tertiary)] hover:bg-[var(--border)]'
+                }`}
+              />
+            )
+          })}
         </div>
       </div>
 
