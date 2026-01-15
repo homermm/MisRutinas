@@ -1,0 +1,123 @@
+-- MisRutinas Database Schema
+-- Run this script in your Supabase SQL Editor
+
+-- Enable UUID extension
+create extension if not exists "uuid-ossp";
+
+-- =====================================================
+-- CATEGORIES
+-- =====================================================
+create table if not exists categories (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users not null default auth.uid(),
+  name text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table categories enable row level security;
+
+drop policy if exists "Users can CRUD their own categories" on categories;
+create policy "Users can CRUD their own categories" on categories
+  for all using (auth.uid() = user_id);
+
+-- =====================================================
+-- EXERCISES
+-- =====================================================
+create table if not exists exercises (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users not null default auth.uid(),
+  category_id uuid references categories(id) on delete cascade,
+  name text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table exercises enable row level security;
+
+drop policy if exists "Users can CRUD their own exercises" on exercises;
+create policy "Users can CRUD their own exercises" on exercises
+  for all using (auth.uid() = user_id);
+
+-- =====================================================
+-- ROUTINES
+-- =====================================================
+create table if not exists routines (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users not null default auth.uid(),
+  name text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table routines enable row level security;
+
+drop policy if exists "Users can CRUD their own routines" on routines;
+create policy "Users can CRUD their own routines" on routines
+  for all using (auth.uid() = user_id);
+
+-- =====================================================
+-- ROUTINE_EXERCISES (Join table)
+-- =====================================================
+create table if not exists routine_exercises (
+  id uuid default uuid_generate_v4() primary key,
+  routine_id uuid references routines(id) on delete cascade not null,
+  exercise_id uuid references exercises(id) on delete cascade not null,
+  "order" integer not null default 0
+);
+
+alter table routine_exercises enable row level security;
+
+drop policy if exists "Users can CRUD their own routine exercises" on routine_exercises;
+create policy "Users can CRUD their own routine exercises" on routine_exercises
+  for all using (
+    routine_id in (select id from routines where user_id = auth.uid())
+  );
+
+-- =====================================================
+-- SESSIONS
+-- =====================================================
+create table if not exists sessions (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users not null default auth.uid(),
+  routine_id uuid references routines(id) on delete set null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  completed_at timestamp with time zone
+);
+
+alter table sessions enable row level security;
+
+drop policy if exists "Users can CRUD their own sessions" on sessions;
+create policy "Users can CRUD their own sessions" on sessions
+  for all using (auth.uid() = user_id);
+
+-- =====================================================
+-- SET_LOGS
+-- =====================================================
+create table if not exists set_logs (
+  id uuid default uuid_generate_v4() primary key,
+  session_id uuid references sessions(id) on delete cascade not null,
+  exercise_id uuid references exercises(id) on delete set null,
+  reps integer not null,
+  weight_kg numeric not null default 0,
+  set_number integer not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table set_logs enable row level security;
+
+drop policy if exists "Users can CRUD their own set logs" on set_logs;
+create policy "Users can CRUD their own set logs" on set_logs
+  for all using (
+    session_id in (select id from sessions where user_id = auth.uid())
+  );
+
+-- =====================================================
+-- INDEXES for performance
+-- =====================================================
+create index if not exists idx_categories_user_id on categories(user_id);
+create index if not exists idx_exercises_user_id on exercises(user_id);
+create index if not exists idx_exercises_category_id on exercises(category_id);
+create index if not exists idx_routines_user_id on routines(user_id);
+create index if not exists idx_routine_exercises_routine_id on routine_exercises(routine_id);
+create index if not exists idx_sessions_user_id on sessions(user_id);
+create index if not exists idx_sessions_routine_id on sessions(routine_id);
+create index if not exists idx_set_logs_session_id on set_logs(session_id);
+create index if not exists idx_set_logs_exercise_id on set_logs(exercise_id);
