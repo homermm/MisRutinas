@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Dumbbell, FolderOpen, Timer } from 'lucide-react'
+import { Home, Dumbbell, FolderOpen, History } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 const navItems = [
   { path: '/', label: 'Inicio', icon: Home },
   { path: '/routines', label: 'Rutinas', icon: Dumbbell },
   { path: '/library', label: 'Biblioteca', icon: FolderOpen },
-  { path: '/timer', label: 'Cronómetro', icon: Timer },
+  { path: '/history', label: 'Historial', icon: History },
 ]
 
 export function BottomNav() {

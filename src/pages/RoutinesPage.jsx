@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Dumbbell, Play, X, Check, Loader2, GripVertical, FolderPlus, Search } from 'lucide-react'
+import { Plus, Edit2, Trash2, Dumbbell, Play, X, Check, Loader2, GripVertical, FolderPlus, Search, Copy } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
@@ -133,6 +133,40 @@ export function RoutinesPage() {
       await fetchData()
     } catch (error) {
       console.error('Error deleting routine:', error)
+    }
+  }
+
+  // Duplicate routine
+  const handleDuplicate = async (routine) => {
+    try {
+      // Create new routine with "(copia)" suffix
+      const { data: newRoutine, error: routineError } = await supabase
+        .from('routines')
+        .insert({ name: `${routine.name} (copia)` })
+        .select()
+        .single()
+
+      if (routineError) throw routineError
+
+      // Copy exercise associations
+      if (routine.routine_exercises?.length > 0) {
+        const newExercises = routine.routine_exercises.map(re => ({
+          routine_id: newRoutine.id,
+          exercise_id: re.exercises?.id,
+          order: re.order
+        })).filter(e => e.exercise_id)
+
+        if (newExercises.length > 0) {
+          const { error } = await supabase
+            .from('routine_exercises')
+            .insert(newExercises)
+          if (error) throw error
+        }
+      }
+
+      await fetchData()
+    } catch (error) {
+      console.error('Error duplicating routine:', error)
     }
   }
 
@@ -549,8 +583,19 @@ export function RoutinesPage() {
                       handleEdit(routine)
                     }}
                     className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--primary)]"
+                    title="Editar"
                   >
                     <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDuplicate(routine)
+                    }}
+                    className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--success)]"
+                    title="Duplicar"
+                  >
+                    <Copy className="w-4 h-4" />
                   </button>
                   <button
                     onClick={(e) => {
@@ -558,6 +603,7 @@ export function RoutinesPage() {
                       handleDelete(routine.id)
                     }}
                     className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--danger)]"
+                    title="Eliminar"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

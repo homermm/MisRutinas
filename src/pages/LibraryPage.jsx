@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, FolderOpen, ChevronDown, ChevronRight, X, Check, Loader2, ListChecks } from 'lucide-react'
+import { Plus, Edit2, Trash2, FolderOpen, ChevronDown, ChevronRight, X, Check, Loader2, ListChecks, StickyNote } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export function LibraryPage() {
@@ -17,6 +17,7 @@ export function LibraryPage() {
   const [showExerciseForm, setShowExerciseForm] = useState(null) // category id
   const [editingExerciseId, setEditingExerciseId] = useState(null)
   const [exerciseName, setExerciseName] = useState('')
+  const [exerciseNotes, setExerciseNotes] = useState('')
   const [savingExercise, setSavingExercise] = useState(false)
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export function LibraryPage() {
         .from('categories')
         .select(`
           *,
-          exercises (id, name)
+          exercises (id, name, notes)
         `)
         .order('name')
 
@@ -89,9 +90,16 @@ export function LibraryPage() {
     setSavingExercise(true)
     try {
       if (editingExerciseId) {
-        await supabase.from('exercises').update({ name: exerciseName.trim() }).eq('id', editingExerciseId)
+        await supabase.from('exercises').update({ 
+          name: exerciseName.trim(),
+          notes: exerciseNotes.trim() || null
+        }).eq('id', editingExerciseId)
       } else {
-        await supabase.from('exercises').insert({ name: exerciseName.trim(), category_id: categoryId })
+        await supabase.from('exercises').insert({ 
+          name: exerciseName.trim(), 
+          notes: exerciseNotes.trim() || null,
+          category_id: categoryId 
+        })
       }
       await fetchCategories()
       resetExerciseForm()
@@ -105,6 +113,7 @@ export function LibraryPage() {
   const handleEditExercise = (exercise, categoryId) => {
     setEditingExerciseId(exercise.id)
     setExerciseName(exercise.name)
+    setExerciseNotes(exercise.notes || '')
     setShowExerciseForm(categoryId)
     setExpandedCategory(categoryId)
   }
@@ -119,6 +128,7 @@ export function LibraryPage() {
     setShowExerciseForm(null)
     setEditingExerciseId(null)
     setExerciseName('')
+    setExerciseNotes('')
   }
 
   const toggleCategory = (categoryId) => {
@@ -228,46 +238,64 @@ export function LibraryPage() {
                   {category.exercises?.map((exercise) => (
                     <div
                       key={exercise.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-secondary)] group"
+                      className="p-3 rounded-lg bg-[var(--bg-secondary)] group"
                     >
-                      <div className="flex items-center gap-3">
-                        <ListChecks className="w-4 h-4 text-[var(--success)]" />
-                        <span className="text-[var(--text-primary)]">{exercise.name}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <ListChecks className="w-4 h-4 text-[var(--success)]" />
+                          <span className="text-[var(--text-primary)]">{exercise.name}</span>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEditExercise(exercise, category.id)}
+                            className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--primary)]"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExercise(exercise.id)}
+                            className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--danger)]"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditExercise(exercise, category.id)}
-                          className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--primary)]"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteExercise(exercise.id)}
-                          className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--danger)]"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {exercise.notes && (
+                        <div className="mt-2 flex items-start gap-2 text-sm text-[var(--text-muted)] pl-7">
+                          <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                          <span>{exercise.notes}</span>
+                        </div>
+                      )}
                     </div>
                   ))}
 
-                  {/* Add Exercise Form or Button */}
+                  {/* Add/Edit Exercise Form */}
                   {showExerciseForm === category.id ? (
-                    <form onSubmit={(e) => handleExerciseSubmit(e, category.id)} className="flex gap-2">
+                    <form onSubmit={(e) => handleExerciseSubmit(e, category.id)} className="space-y-2">
                       <input
                         type="text"
                         value={exerciseName}
                         onChange={(e) => setExerciseName(e.target.value)}
-                        className="input flex-1 py-2"
+                        className="input w-full py-2"
                         placeholder="Nombre del ejercicio"
                         autoFocus
                       />
-                      <button type="submit" disabled={savingExercise || !exerciseName.trim()} className="btn-primary px-3 py-2">
-                        {savingExercise ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      </button>
-                      <button type="button" onClick={resetExerciseForm} className="btn-secondary px-3 py-2">
-                        <X className="w-4 h-4" />
-                      </button>
+                      <textarea
+                        value={exerciseNotes}
+                        onChange={(e) => setExerciseNotes(e.target.value)}
+                        className="input w-full py-2 resize-none"
+                        placeholder="Notas (opcional): grip ancho, pausado, etc."
+                        rows={2}
+                      />
+                      <div className="flex gap-2">
+                        <button type="submit" disabled={savingExercise || !exerciseName.trim()} className="btn-primary px-4 py-2 flex-1 flex items-center justify-center gap-2">
+                          {savingExercise ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                          {editingExerciseId ? 'Actualizar' : 'Agregar'}
+                        </button>
+                        <button type="button" onClick={resetExerciseForm} className="btn-secondary px-4 py-2">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </form>
                   ) : (
                     <button

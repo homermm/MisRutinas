@@ -28,6 +28,7 @@ create table if not exists exercises (
   user_id uuid references auth.users not null default auth.uid(),
   category_id uuid references categories(id) on delete cascade,
   name text not null,
+  notes text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

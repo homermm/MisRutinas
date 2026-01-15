@@ -6,6 +6,9 @@ import { Dashboard } from './pages/Dashboard'
 import { RoutinesPage } from './pages/RoutinesPage'
 import { LibraryPage } from './pages/LibraryPage'
 import { TimerPage } from './pages/TimerPage'
+import { HistoryPage } from './pages/HistoryPage'
+import { StatsPage } from './pages/StatsPage'
+import { ComparePage } from './pages/ComparePage'
 import { ActiveSessionPage } from './pages/ActiveSessionPage'
 import { Loader2 } from 'lucide-react'
 import './index.css'
@@ -88,6 +91,16 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/history"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <HistoryPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
       {/* Active Session (no layout wrapper - full screen) */}
       <Route
@@ -95,6 +108,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ActiveSessionPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Stats Page */}
+      <Route
+        path="/stats"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <StatsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Compare Sessions Page */}
+      <Route
+        path="/compare"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ComparePage />
+            </Layout>
           </ProtectedRoute>
         }
       />
