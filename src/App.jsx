@@ -14,6 +14,9 @@ import { GoalsPage } from './pages/GoalsPage'
 import { CalculatorPage } from './pages/CalculatorPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { FriendsPage } from './pages/FriendsPage'
+import { ExerciseHistoryPage } from './pages/ExerciseHistoryPage'
+import { MuscleVolumePage } from './pages/MuscleVolumePage'
+import { YearInReviewPage } from './pages/YearInReviewPage'
 import { ActiveSessionPage } from './pages/ActiveSessionPage'
 import { Loader2 } from 'lucide-react'
 import './index.css'
@@ -208,6 +211,42 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <FriendsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Exercise History */}
+      <Route
+        path="/exercise/:exerciseId/history"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ExerciseHistoryPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Muscle Volume Analytics */}
+      <Route
+        path="/stats/muscle-volume"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <MuscleVolumePage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Year in Review */}
+      <Route
+        path="/stats/year-review"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <YearInReviewPage />
             </Layout>
           </ProtectedRoute>
         }

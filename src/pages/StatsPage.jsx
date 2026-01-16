@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Trophy, TrendingUp, Calendar, Dumbbell, Loader2, ChevronRight, Target } from 'lucide-react'
+import { Trophy, TrendingUp, Calendar, Dumbbell, Loader2, ChevronRight, Target, PieChart, Star } from 'lucide-react'
 
 export function StatsPage() {
   const [loading, setLoading] = useState(true)
@@ -174,6 +174,34 @@ export function StatsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Quick Analytics Links */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link 
+          to="/stats/muscle-volume" 
+          className="card p-4 flex items-center gap-3 hover:border-[var(--primary)] transition-colors"
+        >
+          <div className="p-2 rounded-lg bg-[var(--warning)]/20">
+            <PieChart className="w-5 h-5 text-[var(--warning)]" />
+          </div>
+          <div>
+            <p className="font-medium text-[var(--text-primary)]">Por Músculo</p>
+            <p className="text-xs text-[var(--text-muted)]">Distribución de volumen</p>
+          </div>
+        </Link>
+        <Link 
+          to="/stats/year-review" 
+          className="card p-4 flex items-center gap-3 hover:border-[var(--primary)] transition-colors"
+        >
+          <div className="p-2 rounded-lg bg-[var(--danger)]/20">
+            <Star className="w-5 h-5 text-[var(--danger)]" />
+          </div>
+          <div>
+            <p className="font-medium text-[var(--text-primary)]">Resumen Anual</p>
+            <p className="text-xs text-[var(--text-muted)]">Year in Review</p>
+          </div>
+        </Link>
       </div>
 
       {/* Weekly Volume Chart */}
