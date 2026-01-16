@@ -12,6 +12,8 @@ import { ComparePage } from './pages/ComparePage'
 import { ExerciseProgressPage } from './pages/ExerciseProgressPage'
 import { GoalsPage } from './pages/GoalsPage'
 import { CalculatorPage } from './pages/CalculatorPage'
+import { ProfilePage } from './pages/ProfilePage'
+import { FriendsPage } from './pages/FriendsPage'
 import { ActiveSessionPage } from './pages/ActiveSessionPage'
 import { Loader2 } from 'lucide-react'
 import './index.css'
@@ -170,6 +172,42 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <CalculatorPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Profile (own) */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ProfilePage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Profile (public by username) */}
+      <Route
+        path="/u/:username"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ProfilePage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Friends Page */}
+      <Route
+        path="/friends"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <FriendsPage />
             </Layout>
           </ProtectedRoute>
         }

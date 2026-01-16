@@ -29,7 +29,7 @@ vi.mock('../lib/supabase', () => ({
 }))
 
 describe('BottomNav', () => {
-  it('renders all four navigation items', async () => {
+  it('renders all navigation items', async () => {
     const { BottomNav } = await import('../components/layout/BottomNav')
     render(<BottomNav />, { wrapper: BrowserRouter })
     
@@ -37,6 +37,7 @@ describe('BottomNav', () => {
     expect(screen.getByText('Rutinas')).toBeInTheDocument()
     expect(screen.getByText('Biblioteca')).toBeInTheDocument()
     expect(screen.getByText('Historial')).toBeInTheDocument()
+    expect(screen.getByText('Perfil')).toBeInTheDocument()
   })
 
   it('has correct link destinations', async () => {
@@ -44,11 +45,12 @@ describe('BottomNav', () => {
     render(<BottomNav />, { wrapper: BrowserRouter })
     
     const links = screen.getAllByRole('link')
-    expect(links).toHaveLength(4)
+    expect(links).toHaveLength(5)
     expect(links[0]).toHaveAttribute('href', '/')
     expect(links[1]).toHaveAttribute('href', '/routines')
     expect(links[2]).toHaveAttribute('href', '/library')
     expect(links[3]).toHaveAttribute('href', '/history')
+    expect(links[4]).toHaveAttribute('href', '/profile')
   })
 })
 

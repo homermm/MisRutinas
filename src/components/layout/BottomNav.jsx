@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Dumbbell, FolderOpen, History } from 'lucide-react'
+import { Home, Dumbbell, FolderOpen, History, User } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { path: '/routines', label: 'Rutinas', icon: Dumbbell },
   { path: '/library', label: 'Biblioteca', icon: FolderOpen },
   { path: '/history', label: 'Historial', icon: History },
+  { path: '/profile', label: 'Perfil', icon: User },
 ]
 
 export function BottomNav() {

@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Calendar, ChevronDown, ChevronRight, Trash2, Edit2, Loader2, Trophy, X, Check, Dumbbell, TrendingUp, GitCompare } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronRight, Trash2, Edit2, Loader2, Trophy, X, Check, Dumbbell, TrendingUp, GitCompare, Share2 } from 'lucide-react'
 import { formatWeight } from '../lib/utils'
+import { ShareSessionCard } from '../components/ShareSessionCard'
 
 export function HistoryPage() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [expandedSession, setExpandedSession] = useState(null)
-  const [editingSet, setEditingSet] = useState(null) // { sessionId, setLogId, reps, weight_kg }
+  const [editingSet, setEditingSet] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [shareSession, setShareSession] = useState(null)
 
   useEffect(() => {
     fetchSessions()
@@ -146,6 +148,7 @@ export function HistoryPage() {
   }
 
   return (
+    <>
     <div className="space-y-6 fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -231,6 +234,15 @@ export function HistoryPage() {
                         Volumen
                       </span>
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShareSession(session)
+                      }}
+                      className="p-2 rounded-lg hover:bg-[var(--primary)]/20 text-[var(--text-muted)] hover:text-[var(--primary)]"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -329,5 +341,14 @@ export function HistoryPage() {
         </div>
       )}
     </div>
+
+    {/* Share Modal */}
+    {shareSession && (
+      <ShareSessionCard 
+        session={shareSession} 
+        onClose={() => setShareSession(null)} 
+      />
+    )}
+  </>
   )
 }
