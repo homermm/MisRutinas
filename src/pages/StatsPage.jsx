@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { formatNumber } from '../lib/utils'
 import { Trophy, TrendingUp, Calendar, Dumbbell, Loader2, ChevronRight, Target, PieChart, Star } from 'lucide-react'
 
 export function StatsPage() {
@@ -120,11 +121,7 @@ export function StatsPage() {
     return new Date(d.setDate(diff))
   }
 
-  const formatNumber = (num) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
-    return num.toString()
-  }
+  // formatNumber imported from utils.js
 
   const maxWeeklyVolume = Math.max(...stats.weeklyVolume.map(w => w.volume), 1)
 

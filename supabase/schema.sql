@@ -99,6 +99,9 @@ create table if not exists set_logs (
   reps integer not null,
   weight_kg numeric not null default 0,
   set_number integer not null,
+  notes text,
+  is_warmup boolean default false,
+  set_type text default 'normal' check (set_type in ('normal', 'warmup', 'dropset', 'restpause')),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

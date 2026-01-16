@@ -3,6 +3,7 @@ import { Play, Plus, TrendingUp, Calendar, Flame, Target, Calculator } from 'luc
 import { useNavigate, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { ActivityCalendar } from '../components/ActivityCalendar'
 
 export function Dashboard() {
   const { user } = useAuth()
@@ -73,25 +74,24 @@ export function Dashboard() {
     let streak = 0
     let currentWeek = getWeekNumber(today)
     let currentYear = today.getFullYear()
+    let allowedGap = true // Allow current week to be empty
 
     for (let i = 0; i < 52; i++) {
       const weekKey = `${currentYear}-${currentWeek}`
       if (weeksWithSessions.has(weekKey)) {
         streak++
-        currentWeek--
-        if (currentWeek === 0) {
-          currentYear--
-          currentWeek = 52
-        }
-      } else if (i === 0) {
-        // Allow current week to be empty if we're still in it
-        currentWeek--
-        if (currentWeek === 0) {
-          currentYear--
-          currentWeek = 52
-        }
+        allowedGap = false // No more gaps allowed after first match
+      } else if (allowedGap && i === 0) {
+        // Current week is empty but we allow it, move to previous
+        allowedGap = false
       } else {
         break
+      }
+      
+      currentWeek--
+      if (currentWeek === 0) {
+        currentYear--
+        currentWeek = 52
       }
     }
 
@@ -197,6 +197,9 @@ export function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {/* Activity Calendar */}
+      <ActivityCalendar weeks={12} />
 
       {/* Recent Routines */}
       {stats.recentRoutines.length > 0 && (

@@ -53,7 +53,7 @@ export function RestTimer({ onClose, embedded = false }) {
     setIsRunning(false)
   }
 
-  const progress = (timeLeft / selectedPreset) * 100
+  const progress = (timeLeft / Math.max(selectedPreset, 1)) * 100
 
   const content = (
     <div className={embedded ? "card p-6 w-full max-w-sm" : "card p-6 w-full max-w-sm fade-in"}>

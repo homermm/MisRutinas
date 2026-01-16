@@ -18,6 +18,10 @@ import { ExerciseHistoryPage } from './pages/ExerciseHistoryPage'
 import { MuscleVolumePage } from './pages/MuscleVolumePage'
 import { YearInReviewPage } from './pages/YearInReviewPage'
 import { ActiveSessionPage } from './pages/ActiveSessionPage'
+import { BodyMeasurementsPage } from './pages/BodyMeasurementsPage'
+import { LeaderboardPage } from './pages/LeaderboardPage'
+import { ActivityFeedPage } from './pages/ActivityFeedPage'
+import { SharedRoutinesPage } from './pages/SharedRoutinesPage'
 import { Loader2 } from 'lucide-react'
 import './index.css'
 
@@ -247,6 +251,54 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <YearInReviewPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Body Measurements */}
+      <Route
+        path="/body-measurements"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <BodyMeasurementsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Leaderboard */}
+      <Route
+        path="/leaderboard"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <LeaderboardPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Activity Feed */}
+      <Route
+        path="/feed"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ActivityFeedPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Shared Routines */}
+      <Route
+        path="/shared-routines"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <SharedRoutinesPage />
             </Layout>
           </ProtectedRoute>
         }

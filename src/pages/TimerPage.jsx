@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { RestTimer } from '../components/workout/RestTimer'
-import { Timer, X } from 'lucide-react'
+import { Timer } from 'lucide-react'
 
 export function TimerPage() {
   const [showTimer, setShowTimer] = useState(true)

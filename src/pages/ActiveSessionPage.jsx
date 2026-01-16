@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Timer, Check, Plus, Trash2, Loader2, Trophy, List, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Timer, Check, Plus, Minus, Trash2, Loader2, Trophy, List, ChevronDown, MessageSquare } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { calculateVolume } from '../lib/utils'
+import { calculateVolume, calculate1RM } from '../lib/utils'
+import { WEIGHT_INCREMENT, SET_TYPES } from '../lib/constants'
 import { RestTimer } from '../components/workout/RestTimer'
 
 export function ActiveSessionPage() {
@@ -14,6 +15,8 @@ export function ActiveSessionPage() {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
   const [sets, setSets] = useState({})
   const [previousSets, setPreviousSets] = useState({})
+  const [exercisePRs, setExercisePRs] = useState({}) // Track PRs for each exercise
+  const [prNotification, setPrNotification] = useState(null) // { exerciseName, weight }
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showTimer, setShowTimer] = useState(false)
@@ -52,11 +55,12 @@ export function ActiveSessionPage() {
 
       const initialSets = {}
       orderedExercises.forEach(ex => {
-        initialSets[ex.id] = [{ reps: 0, weight_kg: 0, set_number: 1 }]
+        initialSets[ex.id] = [{ reps: 0, weight_kg: 0, set_number: 1, notes: '', set_type: 'normal', is_warmup: false }]
       })
       setSets(initialSets)
 
       await fetchSmartSets(routineId, orderedExercises)
+      await fetchExercisePRs(orderedExercises)
 
     } catch (error) {
       console.error('Error fetching routine:', error)
@@ -99,12 +103,19 @@ export function ActiveSessionPage() {
 
       setPreviousSets(prevSets)
 
+      // Note: PRs are now loaded separately from full history via fetchExercisePRs
+
       const smartSets = {}
       exercisesList.forEach(ex => {
         if (prevSets[ex.id]?.length) {
-          smartSets[ex.id] = prevSets[ex.id].map(s => ({ ...s }))
+          smartSets[ex.id] = prevSets[ex.id].map(s => ({ 
+            ...s, 
+            notes: '', 
+            set_type: s.set_type || 'normal', 
+            is_warmup: s.is_warmup || false 
+          }))
         } else {
-          smartSets[ex.id] = [{ reps: 0, weight_kg: 0, set_number: 1 }]
+          smartSets[ex.id] = [{ reps: 0, weight_kg: 0, set_number: 1, notes: '', set_type: 'normal', is_warmup: false }]
         }
       })
       setSets(smartSets)
@@ -114,28 +125,82 @@ export function ActiveSessionPage() {
     }
   }
 
+  // Fetch PRs from complete exercise history (not just last session)
+  const fetchExercisePRs = async (exercisesList) => {
+    try {
+      const exerciseIds = exercisesList.map(e => e.id)
+      
+      const { data: allLogs } = await supabase
+        .from('set_logs')
+        .select('exercise_id, weight_kg')
+        .in('exercise_id', exerciseIds)
+        .order('weight_kg', { ascending: false })
+      
+      if (!allLogs?.length) return
+      
+      // Find max weight per exercise
+      const prs = {}
+      allLogs.forEach(log => {
+        if (!prs[log.exercise_id] || log.weight_kg > prs[log.exercise_id]) {
+          prs[log.exercise_id] = log.weight_kg
+        }
+      })
+      
+      setExercisePRs(prs)
+    } catch (error) {
+      console.error('Error fetching exercise PRs:', error)
+    }
+  }
+
   const currentExercise = exercises[currentExerciseIndex]
   const currentSets = currentExercise ? sets[currentExercise.id] || [] : []
   const currentPreviousSets = currentExercise ? previousSets[currentExercise.id] || [] : []
 
   const updateSet = (setIndex, field, value) => {
     if (!currentExercise) return
+    const newValue = parseFloat(value) || 0
+    
     setSets(prev => ({
       ...prev,
       [currentExercise.id]: prev[currentExercise.id].map((set, i) =>
-        i === setIndex ? { ...set, [field]: parseFloat(value) || 0 } : set
+        i === setIndex ? { ...set, [field]: newValue } : set
       )
     }))
+
+    // Check for PR on weight change
+    if (field === 'weight_kg' && newValue > 0) {
+      const currentPR = exercisePRs[currentExercise.id] || 0
+      if (newValue > currentPR) {
+        setExercisePRs(prev => ({ ...prev, [currentExercise.id]: newValue }))
+        setPrNotification({ exerciseName: currentExercise.name, weight: newValue })
+        setTimeout(() => setPrNotification(null), 3000)
+      }
+    }
+  }
+
+  // Quick adjust functions
+  const adjustWeight = (setIndex, delta) => {
+    if (!currentExercise) return
+    const currentWeight = currentSets[setIndex]?.weight_kg || 0
+    const newWeight = Math.max(0, currentWeight + delta)
+    updateSet(setIndex, 'weight_kg', newWeight)
+  }
+
+  const adjustReps = (setIndex, delta) => {
+    if (!currentExercise) return
+    const currentReps = currentSets[setIndex]?.reps || 0
+    const newReps = Math.max(0, currentReps + delta)
+    updateSet(setIndex, 'reps', newReps)
   }
 
   const addSet = () => {
     if (!currentExercise) return
-    const lastSet = currentSets[currentSets.length - 1] || { reps: 0, weight_kg: 0 }
+    const lastSet = currentSets[currentSets.length - 1] || { reps: 0, weight_kg: 0, notes: '', set_type: 'normal', is_warmup: false }
     setSets(prev => ({
       ...prev,
       [currentExercise.id]: [
         ...prev[currentExercise.id],
-        { reps: lastSet.reps, weight_kg: lastSet.weight_kg, set_number: currentSets.length + 1 }
+        { reps: lastSet.reps, weight_kg: lastSet.weight_kg, set_number: currentSets.length + 1, notes: '', set_type: 'normal', is_warmup: false }
       ]
     }))
   }
@@ -204,7 +269,10 @@ export function ActiveSessionPage() {
               exercise_id: exerciseId,
               reps: set.reps,
               weight_kg: set.weight_kg,
-              set_number: set.set_number
+              set_number: set.set_number,
+              notes: set.notes || null,
+              set_type: set.set_type || 'normal',
+              is_warmup: set.set_type === 'warmup' || set.is_warmup || false
             })
           }
         })
@@ -272,6 +340,16 @@ export function ActiveSessionPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] pb-32">
+      {/* PR Notification Toast */}
+      {prNotification && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+          <div className="bg-[var(--success)] text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2">
+            <Trophy className="w-5 h-5" />
+            <span className="font-bold">¡Nuevo PR! {prNotification.weight}kg en {prNotification.exerciseName}</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-40 glass p-4">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
@@ -396,48 +474,130 @@ export function ActiveSessionPage() {
             {/* Sets */}
             <div className="divide-y divide-[var(--border)]">
               {currentSets.map((set, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 p-3 items-center"
-                >
-                  <span className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-sm font-medium">
-                    {index + 1}
-                  </span>
+                <div key={index} className="py-3">
+                  {/* Main Set Row */}
+                  <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-2 px-3 items-center">
+                    <span className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-sm font-medium">
+                      {index + 1}
+                    </span>
 
-                  <div className="text-center text-sm text-[var(--text-muted)]">
-                    {currentPreviousSets[index] ? (
-                      `${currentPreviousSets[index].weight_kg}kg × ${currentPreviousSets[index].reps}`
-                    ) : (
-                      '-'
-                    )}
+                    <div className="text-center text-sm text-[var(--text-muted)]">
+                      {currentPreviousSets[index] ? (
+                        `${currentPreviousSets[index].weight_kg}kg × ${currentPreviousSets[index].reps}`
+                      ) : (
+                        '-'
+                      )}
+                    </div>
+
+                    {/* Weight with +/- buttons */}
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => adjustWeight(index, -WEIGHT_INCREMENT)}
+                        className="w-7 h-7 rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger)]/20 hover:text-[var(--danger)] transition-colors text-[10px] font-bold"
+                      >
+                        -{WEIGHT_INCREMENT}
+                      </button>
+                      <input
+                        type="number"
+                        value={set.weight_kg || ''}
+                        onChange={(e) => updateSet(index, 'weight_kg', e.target.value)}
+                        className="input text-center py-2 flex-1 min-w-0"
+                        placeholder="0"
+                        min="0"
+                        step="0.5"
+                      />
+                      <button 
+                        onClick={() => adjustWeight(index, WEIGHT_INCREMENT)}
+                        className="w-7 h-7 rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--success)]/20 hover:text-[var(--success)] transition-colors text-[10px] font-bold"
+                      >
+                        +{WEIGHT_INCREMENT}
+                      </button>
+                    </div>
+
+                    {/* Reps with +/- buttons */}
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => adjustReps(index, -1)}
+                        className="w-7 h-7 rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger)]/20 hover:text-[var(--danger)] transition-colors"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <input
+                        type="number"
+                        value={set.reps || ''}
+                        onChange={(e) => updateSet(index, 'reps', e.target.value)}
+                        className="input text-center py-2 flex-1 min-w-0"
+                        placeholder="0"
+                        min="0"
+                      />
+                      <button 
+                        onClick={() => adjustReps(index, 1)}
+                        className="w-7 h-7 rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--success)]/20 hover:text-[var(--success)] transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => removeSet(index)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger)]/20 hover:text-[var(--danger)] transition-colors"
+                      title="Eliminar serie"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
 
-                  <input
-                    type="number"
-                    value={set.weight_kg || ''}
-                    onChange={(e) => updateSet(index, 'weight_kg', e.target.value)}
-                    className="input text-center py-2"
-                    placeholder="0"
-                    min="0"
-                    step="0.5"
-                  />
+                  {/* Set Type & Notes Row */}
+                  <div className="grid grid-cols-[40px_1fr] gap-2 px-3 pt-2">
+                    <div></div>
+                    <div className="flex flex-wrap gap-2">
+                      {/* Set Type Buttons */}
+                      {Object.entries(SET_TYPES).map(([type, config]) => (
+                        <button
+                          key={type}
+                          onClick={() => updateSet(index, 'set_type', type)}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            set.set_type === type
+                              ? 'bg-[var(--primary)] text-white'
+                              : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                          }`}
+                          style={set.set_type === type && config.color ? { backgroundColor: config.color } : {}}
+                        >
+                          {config.icon && <span className="mr-1">{config.icon}</span>}
+                          {config.label}
+                        </button>
+                      ))}
+                      
+                      {/* Notes Toggle */}
+                      <button
+                        onClick={() => {
+                          const notesEl = document.getElementById(`notes-${currentExercise.id}-${index}`)
+                          if (notesEl) notesEl.classList.toggle('hidden')
+                        }}
+                        className={`px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
+                          set.notes ? 'bg-[var(--primary)]/20 text-[var(--primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-muted)]'
+                        }`}
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        Nota
+                      </button>
+                    </div>
+                  </div>
 
-                  <input
-                    type="number"
-                    value={set.reps || ''}
-                    onChange={(e) => updateSet(index, 'reps', e.target.value)}
-                    className="input text-center py-2"
-                    placeholder="0"
-                    min="0"
-                  />
-
-                  <button
-                    onClick={() => removeSet(index)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--danger)]/20 hover:text-[var(--danger)] transition-colors"
-                    title="Eliminar serie"
+                  {/* Notes Input (Hidden by default) */}
+                  <div 
+                    id={`notes-${currentExercise.id}-${index}`}
+                    className={`grid grid-cols-[40px_1fr] gap-2 px-3 pt-2 ${set.notes ? '' : 'hidden'}`}
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <div></div>
+                    <input
+                      type="text"
+                      value={set.notes || ''}
+                      onChange={(e) => updateSet(index, 'notes', e.target.value)}
+                      className="input py-1 text-sm"
+                      placeholder="Añadir nota (ej: con spotter, falló en rep 8...)"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

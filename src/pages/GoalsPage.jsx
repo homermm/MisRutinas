@@ -33,6 +33,7 @@ export function GoalsPage() {
         .order('name')
 
       // For each goal, check if achieved
+      const goalsToUpdate = []
       const goalsWithProgress = await Promise.all(
         (goalsData || []).map(async (goal) => {
           // Get max weight for this exercise
@@ -47,12 +48,9 @@ export function GoalsPage() {
           const progress = Math.min(100, (currentMax / goal.target_weight) * 100)
           const isAchieved = currentMax >= goal.target_weight
 
-          // Update achieved status if needed
+          // Collect goals to update (don't update inside Promise.all to avoid race conditions)
           if (isAchieved && !goal.achieved) {
-            await supabase
-              .from('goals')
-              .update({ achieved: true, achieved_at: new Date().toISOString() })
-              .eq('id', goal.id)
+            goalsToUpdate.push(goal.id)
             goal.achieved = true
             goal.achieved_at = new Date().toISOString()
           }
@@ -60,6 +58,14 @@ export function GoalsPage() {
           return { ...goal, currentMax, progress }
         })
       )
+
+      // Batch update achieved goals after processing
+      if (goalsToUpdate.length > 0) {
+        await supabase
+          .from('goals')
+          .update({ achieved: true, achieved_at: new Date().toISOString() })
+          .in('id', goalsToUpdate)
+      }
 
       setGoals(goalsWithProgress)
       setExercises(exercisesData || [])

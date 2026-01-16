@@ -1,5 +1,17 @@
 export const REST_TIMER_PRESETS = [60, 90, 120, 150]
 
+// Set adjustment increments
+export const WEIGHT_INCREMENT = 2.5
+export const REPS_INCREMENT = 1
+
+// Set types for advanced training techniques
+export const SET_TYPES = {
+  normal: { label: 'Normal', icon: null, color: null },
+  warmup: { label: 'Warmup', icon: '🔥', color: 'var(--warning)' },
+  dropset: { label: 'Drop Set', icon: '⬇️', color: 'var(--danger)' },
+  restpause: { label: 'Rest-Pause', icon: '⏸️', color: 'var(--primary)' },
+}
+
 export const NAV_ITEMS = [
   { path: '/', label: 'Inicio', icon: 'Home' },
   { path: '/routines', label: 'Rutinas', icon: 'Dumbbell' },

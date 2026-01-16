@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { formatNumber } from '../lib/utils'
 import { User, Trophy, Calendar, Dumbbell, Edit2, Check, Loader2, ArrowLeft, Globe, Lock, Users } from 'lucide-react'
 
 export function ProfilePage() {
@@ -46,10 +47,27 @@ export function ProfilePage() {
           .single()
         
         if (!data) {
-          // Create profile if doesn't exist
+          // Create profile if doesn't exist - check username availability first
+          const baseUsername = user.email?.split('@')[0] || 'user'
+          let username = baseUsername
+          let suffix = 1
+          
+          // Check if username exists and increment until unique
+          while (true) {
+            const { data: existing } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('username', username)
+              .single()
+            
+            if (!existing) break
+            username = `${baseUsername}${suffix}`
+            suffix++
+          }
+          
           const { data: newProfile } = await supabase
             .from('profiles')
-            .insert({ id: user.id, username: user.email?.split('@')[0] })
+            .insert({ id: user.id, username })
             .select()
             .single()
           profileData = newProfile
@@ -143,11 +161,7 @@ export function ProfilePage() {
     }
   }
 
-  const formatNumber = (num) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
-    return num.toString()
-  }
+  // formatNumber imported from utils.js
 
   if (loading) {
     return (

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Edit2, Trash2, Dumbbell, Play, X, Check, Loader2, GripVertical, FolderPlus, Search, Copy } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { debounce } from '../lib/utils'
 import { useNavigate } from 'react-router-dom'
 
 export function RoutinesPage() {
@@ -25,7 +26,19 @@ export function RoutinesPage() {
   
   // Search and filter
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [filterCategoryId, setFilterCategoryId] = useState('')
+  
+  // Debounced search handler
+  const debouncedSetSearch = useMemo(
+    () => debounce((value) => setDebouncedSearchQuery(value), 300),
+    []
+  )
+  
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value)
+    debouncedSetSearch(e.target.value)
+  }
   
   const navigate = useNavigate()
 
@@ -369,7 +382,7 @@ export function RoutinesPage() {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={handleSearchChange}
                     className="input pl-9 py-2 text-sm"
                     placeholder="Buscar ejercicio..."
                   />
@@ -389,7 +402,7 @@ export function RoutinesPage() {
               <div className="max-h-40 overflow-y-auto space-y-1 bg-[var(--bg-tertiary)]/50 rounded-lg p-2">
                 {exercises
                   .filter(e => !selectedExercises.includes(e.id))
-                  .filter(e => !searchQuery || e.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .filter(e => !debouncedSearchQuery || e.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
                   .filter(e => !filterCategoryId || e.category_id === filterCategoryId)
                   .map((exercise) => (
                   <button
