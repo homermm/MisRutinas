@@ -4,7 +4,9 @@
  */
 export function calculateVolume(sets) {
   return sets.reduce((total, set) => {
-    return total + (set.weight_kg * set.reps)
+    const weight = Number(set.weight_kg) || 0
+    const reps = Number(set.reps) || 0
+    return total + (weight * reps)
   }, 0)
 }
 
@@ -71,9 +73,11 @@ export function debounce(fn, delay) {
  * Best for reps > 1
  */
 export function calculate1RMEpley(weight, reps) {
-  if (reps <= 0 || weight <= 0) return 0
-  if (reps === 1) return weight
-  return Math.round(weight * (1 + reps / 30) * 10) / 10
+  const w = Number(weight) || 0
+  const r = Number(reps) || 0
+  if (r <= 0 || w <= 0 || !isFinite(w) || !isFinite(r)) return 0
+  if (r === 1) return w
+  return Math.round(w * (1 + r / 30) * 10) / 10
 }
 
 /**
@@ -82,10 +86,12 @@ export function calculate1RMEpley(weight, reps) {
  * Most accurate for reps < 10
  */
 export function calculate1RMBrzycki(weight, reps) {
-  if (reps <= 0 || weight <= 0) return 0
-  if (reps === 1) return weight
-  if (reps >= 37) return weight * 2 // Prevent division by zero/negative
-  return Math.round(weight * (36 / (37 - reps)) * 10) / 10
+  const w = Number(weight) || 0
+  const r = Number(reps) || 0
+  if (r <= 0 || w <= 0 || !isFinite(w) || !isFinite(r)) return 0
+  if (r === 1) return w
+  if (r >= 37) return Math.round(w * 2 * 10) / 10 // Prevent division by zero/negative
+  return Math.round(w * (36 / (37 - r)) * 10) / 10
 }
 
 /**
@@ -93,10 +99,12 @@ export function calculate1RMBrzycki(weight, reps) {
  * Returns more balanced estimate
  */
 export function calculate1RM(weight, reps) {
-  if (reps <= 0 || weight <= 0) return 0
-  if (reps === 1) return weight
-  const epley = calculate1RMEpley(weight, reps)
-  const brzycki = calculate1RMBrzycki(weight, reps)
+  const w = Number(weight) || 0
+  const r = Number(reps) || 0
+  if (r <= 0 || w <= 0 || !isFinite(w) || !isFinite(r)) return 0
+  if (r === 1) return w
+  const epley = calculate1RMEpley(w, r)
+  const brzycki = calculate1RMBrzycki(w, r)
   return Math.round((epley + brzycki) / 2 * 10) / 10
 }
 

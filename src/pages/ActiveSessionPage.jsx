@@ -158,7 +158,12 @@ export function ActiveSessionPage() {
 
   const updateSet = (setIndex, field, value) => {
     if (!currentExercise) return
-    const newValue = parseFloat(value) || 0
+    
+    // Only parse as float for numeric fields
+    const numericFields = ['weight_kg', 'reps', 'set_number']
+    const newValue = numericFields.includes(field) 
+      ? (parseFloat(value) || 0)
+      : value  // Keep strings as-is (notes, set_type)
     
     setSets(prev => ({
       ...prev,
