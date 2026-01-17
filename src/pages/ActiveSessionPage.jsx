@@ -161,9 +161,14 @@ export function ActiveSessionPage() {
     
     // Only parse as float for numeric fields
     const numericFields = ['weight_kg', 'reps', 'set_number']
-    const newValue = numericFields.includes(field) 
+    let newValue = numericFields.includes(field) 
       ? (parseFloat(value) || 0)
       : value  // Keep strings as-is (notes, set_type)
+    
+    // Clamp weight and reps to non-negative values
+    if (field === 'weight_kg' || field === 'reps') {
+      newValue = Math.max(0, newValue)
+    }
     
     setSets(prev => ({
       ...prev,
